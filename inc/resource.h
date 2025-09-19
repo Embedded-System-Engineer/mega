@@ -28,7 +28,8 @@
 //#include "../../../../../Nurse System/Nurse Display/SW/Display Sw V1/NurseDisplay.X/inc/res.h"
 //#include  "../../../../../Nurse System/Nurse Master/SW/Master SW V1/NurseMaster.X/inc/res.h"
 //#include  "../../../../../Nurse System/Nurse Room/SW/Room Sw V1/NurseRoom.X/inc/res.h"
-#include "F:\Generator Driver\SW\Control Panel Generator.X\inc\res.h"
+// TODO: Absolute path. Please replace with a relative path or configure the build system.
+//#include "F:\Generator Driver\SW\Control Panel Generator.X\inc\res.h"
 //#include "E:\Control Panel Generator.X\Control Panel Generator.X\inc\res.h"
 #endif
 

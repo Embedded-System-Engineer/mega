@@ -249,7 +249,413 @@ void zlpPrintLabel(uint8_t copies);
 uint8_t zlpIsBusy(void);
 ```
 
-## 🔧 Getting Started
+## � Module Usage Examples
+
+### GPIO Example
+```c
+void appInit(void) {
+    // Configure GPIO pins
+    gpioSetMode(GPIO_A0, GPIO_MODE_OUTPUT);
+    gpioSetMode(GPIO_A1, GPIO_MODE_INPUT_PULLUP);
+}
+
+void appMain(void) {
+    // Write to output
+    gpioWrite(GPIO_A0, GPIO_HIGH);
+    
+    // Read input
+    gpio_state_t input = gpioRead(GPIO_A1);
+    if (input == GPIO_HIGH) {
+        gpioWrite(GPIO_A0, GPIO_LOW);
+    }
+}
+```
+
+### LCD Display Example
+```c
+void appInit(void) {
+    lcdInit();
+    schedulerAddTask(lcdDriver, NULL, 20);
+}
+
+void appMain(void) {
+    lcdClear();
+    lcdSetCursor(0, 0);
+    lcdPrint("Temp: 25.5C");
+    lcdSetCursor(1, 0);
+    lcdPrint("Humidity: 60%");
+}
+```
+
+### Keypad Input Example
+```c
+void keypadCallback(uint8_t key_code) {
+    if (key_code == '1') {
+        gpioWrite(GPIO_A0, GPIO_TGL);
+    }
+}
+
+void appInit(void) {
+    keypadInit();
+    keypadRegisterCallback('1', keypadCallback);
+    schedulerAddTask(keypadDriver, NULL, 10);
+}
+```
+
+### Button Input Example
+```c
+void buttonPressCallback(button_event_t event) {
+    switch (event) {
+        case BUTTON_PRESSED:
+            tonePlay(0, 1000, 1, 500);  // Play 1kHz for 500ms
+            break;
+        case BUTTON_RELEASED:
+            toneStop(0);
+            break;
+        default:
+            break;
+    }
+}
+
+void appInit(void) {
+    buttonInit();
+    buttonRegisterEvent(buttonPressCallback, 0);
+    schedulerAddTask(buttonDriver, NULL, 10);
+}
+```
+
+### ADC Reading Example
+```c
+void appInit(void) {
+    adc_config_t config = {0};
+    config.prescaler = ADC_PRESCALER_128;
+    config.ref_voltage = ADC_REF_AVCC;
+    adcInit(&config);
+}
+
+void appMain(void) {
+    static uint32_t last_read = 0;
+    if (systemMillis() - last_read >= 100) {
+        uint16_t analog = adcReadPolling(ADC_CH0);
+        // Use analog value
+        last_read = systemMillis();
+    }
+}
+```
+
+### Tone/PWM Generation Example
+```c
+void appInit(void) {
+    toneInit();
+    schedulerAddTask(toneDriver, NULL, 1);
+}
+
+void appMain(void) {
+    // Play a melody
+    static uint32_t last_play = 0;
+    if (systemMillis() - last_play >= 1000) {
+        tonePlay(0, 1000, 1, 500);  // Channel, period, duration, on_time
+        last_play = systemMillis();
+    }
+}
+```
+
+### 7-Segment Display Example
+```c
+void appInit(void) {
+    _7segInit();
+    
+    uint8_t digit_pins[] = {GPIO_D0, GPIO_D1, GPIO_D2, GPIO_D3};
+    display = _7segCreateDisplay(digit_pins, 4, _7SEG_COMMON_CATHODE);
+    
+    schedulerAddTask(_7segScan, NULL, 1);
+}
+
+void appMain(void) {
+    _7segWriteNumber(display, 1234, _7SEG_CENTER);
+}
+```
+
+### DS1307 RTC Example
+```c
+void appInit(void) {
+    ds1307Init();
+    twi_init(NULL);
+    schedulerAddTask(ds1307Driver, NULL, 100);
+    
+    // Set initial time
+    ds1307_time_t init_time = {0, 30, 14, 15, 01, 2026};  // HH:MM:SS:Day:Month:Year
+    ds1307SetTime(&init_time);
+}
+
+void appMain(void) {
+    static uint32_t last_read = 0;
+    if (systemMillis() - last_read >= 1000) {
+        ds1307_time_t current_time;
+        ds1307GetTime(&current_time);
+        
+        char time_str[9];
+        sprintf(time_str, "%02d:%02d:%02d", current_time.hour, current_time.min, current_time.sec);
+        lcdSetCursor(0, 0);
+        lcdPrint(time_str);
+        
+        last_read = systemMillis();
+    }
+}
+```
+
+### Internal EEPROM Example
+```c
+void appInit(void) {
+    eepromInit();
+    schedulerAddTask(eepromDriver, NULL, 50);
+}
+
+void appMain(void) {
+    // Write to EEPROM
+    uint8_t data[] = {0x12, 0x34, 0x56};
+    eepromWrite(0x00, data, 3);
+    
+    // Read from EEPROM
+    uint8_t read_buf[3];
+    if (eepromRead(0x00, read_buf, 3)) {
+        // Data successfully read
+    }
+}
+```
+
+### External EEPROM Example
+```c
+void appInit(void) {
+    twi_init(NULL);
+    exepromInit();
+    schedulerAddTask(exepromDriver, NULL, 20);
+}
+
+void appMain(void) {
+    // Write data to external EEPROM at address 0x1000
+    uint8_t write_data[] = {0xAA, 0xBB, 0xCC, 0xDD};
+    exepromWrite(0x1000, write_data, 4);
+    
+    // Read data back
+    uint8_t read_buf[4];
+    exepromRead(0x1000, read_buf, 4);
+    
+    if (exepromIsReady()) {
+        // Ready for next operation
+    }
+}
+```
+
+### USART Serial Communication Example
+```c
+void appInit(void) {
+    usart_config_t config = {0};
+    config.baudrate = BAUDRATE_9600;
+    usartInit(&config);
+}
+
+void appMain(void) {
+    // Transmit data
+    const char *msg = "Hello UART\n";
+    for (uint8_t i = 0; msg[i]; i++) {
+        usartPutByte(USART_PORT_0, msg[i]);
+    }
+    
+    // Receive data
+    if (usartAvailable(USART_PORT_0)) {
+        uint8_t byte = usartGetByte(USART_PORT_0);
+        usartPutByte(USART_PORT_0, byte);  // Echo
+    }
+}
+```
+
+### Signal Generator Example
+```c
+void appInit(void) {
+    signalGenInit();
+    schedulerAddTask(signalGenDriver, NULL, 1);
+}
+
+void appMain(void) {
+    signal_config_t config = {
+        .period = 100,      // 100ms period
+        .duty = 50,         // 50% duty cycle
+        .toggle_count = 5,  // 5 toggles (2.5 cycles)
+        .sleep_count = 2,   // Sleep for 2 periods between cycles
+        .repeat = 3         // Repeat 3 times
+    };
+    
+    signalGenStart(0, &config);
+}
+```
+
+### CSMA Communication - Server Node Example
+```c
+// Server node for coordinating multiple client nodes
+void csmaServerCallback(csma_event_t *event) {
+    if (event->type == CSMA_CLIENT_REQUEST) {
+        // Process client request
+        uint8_t client_addr = event->src_addr;
+        uint8_t *data = event->data;
+        uint8_t len = event->length;
+        
+        // Send response
+        uint8_t response[] = {0x01, 0x02, 0x03};
+        csmaPutData(response, 3, client_addr, CSMA_TYPE_RESPONSE);
+    }
+}
+
+void appInit(void) {
+    csmaInit();
+    csmaConfigureNode(1, 0x12345678);  // 1 = server, activation code
+    csmaSetOnHostRequest(csmaServerCallback);
+    schedulerAddTask(csmaDriver, NULL, 10);
+}
+
+void appMain(void) {
+    // Server processing logic
+    static uint32_t last_broadcast = 0;
+    if (systemMillis() - last_broadcast >= 5000) {
+        // Broadcast periodic status
+        uint8_t status[] = {0xAA, 0xBB};
+        csmaPutData(status, 2, CSMA_BROADCAST_ADDR, CSMA_TYPE_STATUS);
+        last_broadcast = systemMillis();
+    }
+}
+```
+
+### CSMA Communication - Client Node Example
+```c
+// Client node for sending requests to server
+void csmaClientCallback(csma_event_t *event) {
+    if (event->type == CSMA_SERVER_RESPONSE) {
+        // Process server response
+        uint8_t *response_data = event->data;
+        uint8_t response_len = event->length;
+        
+        // Handle response
+        gpioWrite(GPIO_A0, GPIO_HIGH);
+    }
+}
+
+void appInit(void) {
+    csmaInit();
+    csmaConfigureNode(0, 0x12345678);  // 0 = client, activation code
+    csmaSetOnClientResponse(csmaClientCallback);
+    csmaSetNodeAddr(0x02);  // Set node address as 0x02
+    schedulerAddTask(csmaDriver, NULL, 10);
+}
+
+void appMain(void) {
+    // Client sends periodic requests to server
+    static uint32_t last_request = 0;
+    if (systemMillis() - last_request >= 2000) {
+        uint8_t request[] = {0x10, 0x20, 0x30};
+        uint8_t server_addr = 0x01;  // Server address
+        csmaPutData(request, 3, server_addr, CSMA_TYPE_REQUEST);
+        
+        last_request = systemMillis();
+    }
+}
+```
+
+### TWI/I2C Example
+```c
+void appInit(void) {
+    twiInit(400000);  // 400kHz clock speed
+}
+
+void appMain(void) {
+    // Read from I2C device (e.g., temperature sensor at 0x48)
+    uint8_t addr_buf[1] = {0x00};  // Register address
+    uint8_t data_buf[2];
+    
+    twi_package_t pkg = {
+        .chip = 0x48,
+        .addr = addr_buf,
+        .addr_length = 1,
+        .buffer = data_buf,
+        .length = 2
+    };
+    
+    if (twiMasterTransfer(&pkg, 1) == TWI_SUCCESS) {
+        uint16_t temperature = (data_buf[0] << 8) | data_buf[1];
+    }
+}
+```
+
+### FIFO Buffer Example
+```c
+void appInit(void) {
+    static uint8_t fifo_buffer[256];
+    fifo_t rx_fifo;
+    fifoInit(&rx_fifo, fifo_buffer, 256);
+}
+
+void usartRxISR(void) {
+    uint8_t byte = usartGetByte(USART_PORT_0);
+    fifoWrite(&rx_fifo, &byte, 1);
+}
+
+void appMain(void) {
+    if (!fifoIsEmpty(&rx_fifo)) {
+        uint8_t byte;
+        if (fifoRead(&rx_fifo, &byte, 1) == FIFO_OK) {
+            // Process received byte
+            usartPutByte(USART_PORT_0, byte);  // Echo
+        }
+    }
+}
+```
+
+### Multi-Module Integration Example
+```c
+void appInit(void) {
+    // Initialize all modules
+    lcdInit();
+    keypadInit();
+    adcInit(NULL);
+    toneInit();
+    ds1307Init();
+    twi_init(NULL);
+    
+    // Register periodic tasks
+    schedulerAddTask(lcdDriver, NULL, 20);
+    schedulerAddTask(keypadDriver, NULL, 10);
+    schedulerAddTask(toneDriver, NULL, 1);
+    schedulerAddTask(ds1307Driver, NULL, 100);
+}
+
+void appMain(void) {
+    static uint32_t display_timer = 0;
+    
+    if (systemMillis() - display_timer >= 500) {
+        // Update LCD with sensor data
+        uint16_t adc = adcReadPolling(0);
+        
+        lcdSetCursor(0, 0);
+        lcdPrint("ADC:");
+        
+        char buf[10];
+        sprintf(buf, "%04d", adc);
+        lcdSetCursor(0, 5);
+        lcdPrint(buf);
+        
+        // Get and display time
+        ds1307_time_t time;
+        ds1307GetTime(&time);
+        
+        lcdSetCursor(1, 0);
+        sprintf(buf, "%02d:%02d:%02d", time.hour, time.min, time.sec);
+        lcdPrint(buf);
+        
+        display_timer = systemMillis();
+    }
+}
+```
+
+## �🔧 Getting Started
 
 ### Build System
 

@@ -36,28 +36,28 @@
 #include <util/delay.h>
 #include <stdio.h>
 
-/*Modules*/
-#include "mega/gpio.h"
-
-#include "mega/system.h"
-#include "mega/time.h"
-#include "mega/usart.h"
-#include "mega/lcd.h"
-#include "mega/twi.h"
-#include "mega/exEprom.h"
-#include "mega/ds1307.h"
-#include "mega/csma.h"
-#include "mega/SSD.h"
-#include "mega/_7seg.h"
-#include "mega/lcdmenu.h"
-#include "mega/eeprom.h"
-#include "mega/signalGenerator.h"
-#include "mega/keypad.h"
-#include "mega/button.h"
-#include "mega/Tone.h"
-#include "mega/ZLP.h"
-#include "mega/adc.h"
-#include "mega/fifo.h"
+/* Standardized APIs - New Structure */
+#include "../src/mega/gpio/inc/gpio_api.h"
+#include "../src/mega/system/inc/system_api.h"
+#include "../src/mega/system/inc/scheduler_api.h"
+#include "../src/mega/usart/inc/usart_api.h"
+#include "../src/mega/lcd/inc/lcd_api.h"
+#include "../src/mega/twi/inc/twi_api.h"
+#include "../src/mega/exeeprom/inc/exeprom_api.h"
+#include "../src/mega/ds1307/inc/ds1307_api.h"
+#include "../src/mega/csma/inc/csma_api.h"
+#include "../src/mega/SSD/inc/ssd_api.h"
+#include "../src/mega/_7seg/inc/_7seg_api.h"
+#include "../src/mega/lcdmnue/inc/lcd_menu_api.h"
+#include "../src/mega/eeprom/inc/eeprom_api.h"
+#include "../src/mega/signalGenertor/inc/signal_gen_api.h"
+#include "../src/mega/keypad/inc/keypad_api.h"
+#include "../src/mega/button/inc/button_api.h"
+#include "../src/mega/Tone/inc/tone_api.h"
+#include "../src/mega/ZLP/inc/zlp_api.h"
+#include "../src/mega/ADC/inc/adc_api.h"
+#include "../src/mega/fifo/inc/fifo_api.h"
+#include "../src/mega/utility/inc/utility_api.h"
 
 
 extern int main(void);
